@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+// FIXED: robust date range lookup + recycling of REJECTED records + full error logging
 
 export const dynamic = 'force-dynamic';
 

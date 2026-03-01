@@ -3,8 +3,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model User {
@@ -27,12 +28,10 @@ model Booking {
   date      DateTime // The requested date
   status    String   @default("PENDING") // PENDING, BOOKED, REJECTED
   notes     String?  // Any additional requests from the client
-  
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@unique([date]) // Ensure a date can only be booked/pending once
   @@map("Booking")
 }
-
-
