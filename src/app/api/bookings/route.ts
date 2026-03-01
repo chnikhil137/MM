@@ -19,9 +19,12 @@ export async function POST(request: Request) {
     try {
         const { name, phone, eventType, date, notes } = await request.json();
 
+        // Normalize the incoming date string to midnight UTC
+        const normalizedDate = new Date(`${date}T00:00:00Z`);
+
         // Prevent booking a date that is already PENDING or BOOKED
         const existing = await prisma.booking.findUnique({
-            where: { date: new Date(date) },
+            where: { date: normalizedDate },
         });
 
         if (existing && existing.status !== 'REJECTED') {
@@ -32,7 +35,7 @@ export async function POST(request: Request) {
         }
 
         const booking = await prisma.booking.upsert({
-            where: { date: new Date(date) },
+            where: { date: normalizedDate },
             update: {
                 name,
                 phone,
@@ -44,7 +47,7 @@ export async function POST(request: Request) {
                 name,
                 phone,
                 eventType,
-                date: new Date(date),
+                date: normalizedDate,
                 notes,
                 status: 'PENDING',
             },

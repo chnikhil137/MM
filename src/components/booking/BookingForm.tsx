@@ -22,7 +22,7 @@ export function BookingSection() {
             phone: formData.get("phone"),
             eventType: formData.get("eventType"),
             notes: formData.get("notes"),
-            date: selectedDate.toISOString(),
+            date: format(selectedDate, "yyyy-MM-dd"), // Only send the date part
         };
 
         try {

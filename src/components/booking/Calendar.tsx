@@ -6,101 +6,115 @@ import "react-calendar/dist/Calendar.css";
 import { format, isSameDay } from "date-fns";
 
 type Booking = {
-    id: string;
-    date: string;
-    status: "PENDING" | "BOOKED" | "REJECTED";
+  id: string;
+  date: string;
+  status: "PENDING" | "BOOKED" | "REJECTED";
 };
 
 type Props = {
-    onDateSelect: (date: Date | null) => void;
-    selectedDate: Date | null;
+  onDateSelect: (date: Date | null) => void;
+  selectedDate: Date | null;
 };
 
 export function BookingCalendar({ onDateSelect, selectedDate }: Props) {
-    const [bookings, setBookings] = useState<Booking[]>([]);
-    const [loading, setLoading] = useState(true);
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        fetch("/api/bookings")
-            .then((res) => res.json())
-            .then((data) => {
-                if (Array.isArray(data)) {
-                    setBookings(data);
-                }
-                setLoading(false);
-            });
-    }, []);
-
-    // Determine the tile class based on availability
-    const tileClassName = ({ date, view }: { date: Date; view: string }) => {
-        if (view !== "month") return "";
-
-        const booking = bookings.find((b) => isSameDay(new Date(b.date), date));
-
-        if (!booking || booking.status === "REJECTED") {
-            return "available-date";
+  useEffect(() => {
+    fetch("/api/bookings")
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data)) {
+          setBookings(data);
         }
-        if (booking.status === "PENDING") {
-            return "pending-date";
-        }
-        if (booking.status === "BOOKED") {
-            return "booked-date";
-        }
-        return "";
-    };
+        setLoading(false);
+      });
+  }, []);
 
-    // Disable dates in the past or already booked/pending
-    const tileDisabled = ({ date, view }: { date: Date; view: string }) => {
-        if (view !== "month") return false;
+  // Determine the tile class based on availability
+  const tileClassName = ({ date, view }: { date: Date; view: string }) => {
+    if (view !== "month") return "";
 
-        // Disable past dates
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        if (date < today) return true;
+    const booking = bookings.find((b) => {
+      const bDate = new Date(b.date);
+      return (
+        bDate.getUTCFullYear() === date.getFullYear() &&
+        bDate.getUTCMonth() === date.getMonth() &&
+        bDate.getUTCDate() === date.getDate()
+      );
+    });
 
-        // Disable if pending or booked
-        const booking = bookings.find((b) => isSameDay(new Date(b.date), date));
-        return booking?.status === "PENDING" || booking?.status === "BOOKED";
-    };
+    if (!booking || booking.status === "REJECTED") {
+      return "available-date";
+    }
+    if (booking.status === "PENDING") {
+      return "pending-date";
+    }
+    if (booking.status === "BOOKED") {
+      return "booked-date";
+    }
+    return "";
+  };
 
-    return (
-        <div className="bg-dark-800 p-6 rounded-2xl glass-card border border-dark-600 shadow-xl w-full max-w-md mx-auto">
-            <h3 className="text-xl font-display font-bold text-center text-white mb-6">Select a Date</h3>
+  // Disable dates in the past or already booked/pending
+  const tileDisabled = ({ date, view }: { date: Date; view: string }) => {
+    if (view !== "month") return false;
 
-            {loading ? (
-                <div className="h-[300px] flex items-center justify-center">
-                    <div className="w-8 h-8 border-2 border-gold-500 border-t-transparent rounded-full animate-spin" />
-                </div>
-            ) : (
-                <>
-                    <RealCalendar
-                        onChange={(val) => onDateSelect(val as Date)}
-                        value={selectedDate}
-                        tileClassName={tileClassName}
-                        tileDisabled={tileDisabled}
-                        minDate={new Date()}
-                        className="custom-calendar"
-                    />
+    // Disable past dates
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (date < today) return true;
 
-                    <div className="mt-8 flex justify-center gap-6 text-xs text-gray-400">
-                        <div className="flex items-center gap-2">
-                            <span className="w-3 h-3 rounded-full bg-dark-600 border border-dark-500" />
-                            Available
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <span className="w-3 h-3 rounded-full bg-yellow-500/50 border border-yellow-500" />
-                            Pending
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <span className="w-3 h-3 rounded-full bg-red-500/50 border border-red-500" />
-                            Booked
-                        </div>
-                    </div>
-                </>
-            )}
+    // Disable if pending or booked
+    const booking = bookings.find((b) => {
+      const bDate = new Date(b.date);
+      return (
+        bDate.getUTCFullYear() === date.getFullYear() &&
+        bDate.getUTCMonth() === date.getMonth() &&
+        bDate.getUTCDate() === date.getDate()
+      );
+    });
+    return booking?.status === "PENDING" || booking?.status === "BOOKED";
+  };
 
-            <style dangerouslySetInnerHTML={{
-                __html: `
+  return (
+    <div className="bg-dark-800 p-6 rounded-2xl glass-card border border-dark-600 shadow-xl w-full max-w-md mx-auto">
+      <h3 className="text-xl font-display font-bold text-center text-white mb-6">Select a Date</h3>
+
+      {loading ? (
+        <div className="h-[300px] flex items-center justify-center">
+          <div className="w-8 h-8 border-2 border-gold-500 border-t-transparent rounded-full animate-spin" />
+        </div>
+      ) : (
+        <>
+          <RealCalendar
+            onChange={(val) => onDateSelect(val as Date)}
+            value={selectedDate}
+            tileClassName={tileClassName}
+            tileDisabled={tileDisabled}
+            minDate={new Date()}
+            className="custom-calendar"
+          />
+
+          <div className="mt-8 flex justify-center gap-6 text-xs text-gray-400">
+            <div className="flex items-center gap-2">
+              <span className="w-3 h-3 rounded-full bg-dark-600 border border-dark-500" />
+              Available
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="w-3 h-3 rounded-full bg-yellow-500/50 border border-yellow-500" />
+              Pending
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="w-3 h-3 rounded-full bg-red-500/50 border border-red-500" />
+              Booked
+            </div>
+          </div>
+        </>
+      )}
+
+      <style dangerouslySetInnerHTML={{
+        __html: `
         .custom-calendar {
           width: 100% !important;
           background: transparent !important;
@@ -156,6 +170,6 @@ export function BookingCalendar({ onDateSelect, selectedDate }: Props) {
           border: 1px solid rgba(239, 68, 68, 0.5) !important;
         }
       `}} />
-        </div>
-    );
+    </div>
+  );
 }
