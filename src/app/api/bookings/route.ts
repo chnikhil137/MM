@@ -8,9 +8,13 @@ export async function GET() {
             orderBy: { date: 'asc' },
         });
         return NextResponse.json(bookings);
-    } catch (error) {
+    } catch (error: any) {
         console.error('Error fetching bookings:', error);
-        return NextResponse.json({ error: 'Failed to fetch bookings' }, { status: 500 });
+        return NextResponse.json({
+            error: 'Failed to fetch bookings',
+            details: error.message,
+            code: error.code
+        }, { status: 500 });
     }
 }
 
