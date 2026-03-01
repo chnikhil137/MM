@@ -28,9 +28,19 @@ export async function POST(request: Request) {
         // Normalize the incoming date string to midnight UTC
         const normalizedDate = new Date(`${date}T00:00:00Z`);
 
+        // Use a date range (start of day to end of day) to avoid exact
+        // millisecond mismatches with findUnique on DateTime fields
+        const startOfDay = new Date(`${date}T00:00:00Z`);
+        const endOfDay = new Date(`${date}T23:59:59Z`);
+
         // Prevent booking a date that is already PENDING or BOOKED
-        const existing = await prisma.booking.findUnique({
-            where: { date: normalizedDate },
+        const existing = await prisma.booking.findFirst({
+            where: {
+                date: {
+                    gte: startOfDay,
+                    lte: endOfDay,
+                },
+            },
         });
 
         if (existing && existing.status !== 'REJECTED') {
@@ -40,24 +50,34 @@ export async function POST(request: Request) {
             );
         }
 
-        const booking = await prisma.booking.upsert({
-            where: { date: normalizedDate },
-            update: {
-                name,
-                phone,
-                eventType,
-                notes,
-                status: 'PENDING',
-            },
-            create: {
-                name,
-                phone,
-                eventType,
-                date: normalizedDate,
-                notes,
-                status: 'PENDING',
-            },
-        });
+        let booking;
+
+        if (existing && existing.status === 'REJECTED') {
+            // Reuse the existing rejected record by updating it
+            booking = await prisma.booking.update({
+                where: { id: existing.id },
+                data: {
+                    name,
+                    phone,
+                    eventType,
+                    notes,
+                    status: 'PENDING',
+                    date: normalizedDate,
+                },
+            });
+        } else {
+            // Create a fresh booking
+            booking = await prisma.booking.create({
+                data: {
+                    name,
+                    phone,
+                    eventType,
+                    date: normalizedDate,
+                    notes,
+                    status: 'PENDING',
+                },
+            });
+        }
 
         return NextResponse.json({ success: true, booking }, { status: 201 });
     } catch (error) {
